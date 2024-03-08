@@ -1,0 +1,3 @@
+torch-points3d/data
+torch-points3d/outputs
+**/__pycache__/

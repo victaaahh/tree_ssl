@@ -2,10 +2,8 @@ name: pts
 channels:
   - pytorch
   - metric-learning
-  - anaconda
-  - conda-forge
   - pyg
-  - defaults
+  - conda-forge
 dependencies:
   - cloudpickle
   - colorama
