@@ -1,0 +1,31 @@
+# @package data
+defaults:
+  - instance/NFI/transforms/xy
+  - instance/NFI/transforms/xy-treeadd-eval
+  - instance/NFI/transforms/xy-eval
+  - instance/NFI/transforms/sparse
+  - instance/NFI/transforms/sparse-xy
+  - instance/NFI/transforms/sparse-ori
+  - instance/NFI/transforms/sparse-eval
+  - instance/NFI/transforms/sparse-xy-eval
+  - instance/NFI/transforms/sparse-treeadd-eval
+  - instance/NFI/transforms/sparse-xy-treeadd-eval
+  - instance/NFI/transforms/fixed
+  - instance/NFI/transforms/fixed-xy
+  - instance/NFI/transforms/fixed-xy-treeadd-eval
+  - instance/NFI/transforms/fixed-xy-eval
+
+task: ssl
+class: las_dataset.LasDatasetSSL
+dataset_name: treeSSL
+dataroot: data
+raw_data_files: [2017/*.laz, 2020-21/*.laz]
+transform_type: ???
+first_subsampling: 0.0125
+xy_radius: 15
+x_scale: 30
+y_scale: 30
+z_scale: 40
+x_center: 0.5
+y_center: 0.5
+skip_list: []
