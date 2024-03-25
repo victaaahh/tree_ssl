@@ -20,6 +20,8 @@ class: las_dataset.LasDatasetSSL
 dataset_name: treeSSL
 dataroot: data
 raw_data_files: [2017/*.laz, 2020-21/*.laz]
+min_high_vegetation: 100
+min_points: 500
 transform_type: ???
 first_subsampling: 0.0125
 xy_radius: 15

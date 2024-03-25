@@ -33,11 +33,13 @@ log = logging.getLogger(__name__)
 class LasSSL(Dataset):
     def __init__(
         self, root, raw_data_files, transform=None, pre_transform=None, pre_filter=None,
-        xy_radius=15, feature_cols=None, min_pts: int = 500, ratio_of_5_limit = 0
+        xy_radius=15, feature_cols=[], min_pts: int = 0, min_high_vegetation = 0
     ):
         self.raw_data_files = raw_data_files
         self.xy_radius = xy_radius
-        self.ratio_of_5_limit = ratio_of_5_limit
+        self.min_high_vegetation = min_high_vegetation
+        self.feature_cols = feature_cols
+        self.min_pts = min_pts
         super().__init__(root, transform, pre_transform, pre_filter)
     
     @property
@@ -62,10 +64,10 @@ class LasSSL(Dataset):
         file_idx = 0
         for file in tqdm(raw_files):
             # add support for additional features?
-            pos, features, crs = read_pt(file, ["classification"], ",") # delimiter is in case of csv, but not needed here
+            pos, features, crs = read_pt(file, ["classification"] + self.feature_cols, ",") # delimiter is in case of csv, but not needed here
             x_min, y_min, z_min = np.min(pos, axis=0)
             x_max, y_max, z_max = np.max(pos, axis=0)
-            x_coords = np.arange(x_min+self.xy_radius, x_max-self.xy_radius, self.xy_radius*2)
+            x_coords = np.arange(x_min+self.xy_radius, x_max-self.xy_radius, self.xy_radius*2) # Make hexagon grid
             y_coords = np.arange(y_min+self.xy_radius, y_max-self.xy_radius, self.xy_radius*2)
             point_list = []
             for y in y_coords:
@@ -79,7 +81,7 @@ class LasSSL(Dataset):
             
             first_file = file_idx
             for idx in range(len(label_point_idx)):
-                uniq, counts = np.unique(features[label_point_idx[idx]], return_counts=True)
+                uniq, counts = np.unique(features[label_point_idx[idx], 0], return_counts=True)
                 index_of_5 = np.where(uniq==5)
                 ratio_of_5 = counts[index_of_5]/np.sum(counts)
                 if 5 not in uniq:
@@ -142,7 +144,7 @@ class LasDatasetSSL(BaseDataset):
 
         self.train_dataset = LasSSL(
             root=self._data_path, raw_data_files=self.raw_data_files, transform=self.train_transform,
-            pre_transform=self.pre_transform, pre_filter=None, xy_radius=self.xy_radius,
+            pre_transform=self.pre_transform, xy_radius=self.xy_radius,
             feature_cols=self.feature_cols, min_pts=self.min_pts, ratio_of_5_limit=self.ratio_of_5_limit
         )
         
@@ -150,3 +152,9 @@ class LasDatasetSSL(BaseDataset):
         return InstanceTracker(self, wandb_log=wandb_log, use_tensorboard=tensorboard_log,
                                log_train_metrics=self.log_train_metrics)
 
+# Add support for processing features.
+# Add support for min points
+# Turn check for high vegetation into a pre-filter?
+# Change from ratio to min number of points in high vegetation check.
+# Change to hdf5 data format. How can pytorch geometric load it into memory in chunks? How exactly is the training loop constructed? How are the batches? Can a PYG dataset be passed in as a chunk? Maybe it already loads in a bunch of files at a time using a chunk parameter. What is then to be gained by changing dataformat?
+# Change to hexagon grid.
