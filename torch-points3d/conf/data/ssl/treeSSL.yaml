@@ -21,6 +21,7 @@ dataset_name: treeSSL
 dataroot: data
 raw_data_files: [2017/*.laz, 2020-21/*.laz]
 min_high_vegetation: 100
+#features: [classification]
 min_points: 500
 transform_type: ???
 first_subsampling: 0.0125
@@ -31,3 +32,15 @@ z_scale: 40
 x_center: 0.5
 y_center: 0.5
 skip_list: []
+pre_transform:
+  - transform: DBSCANZOutlierRemoval
+    params:
+      eps: 1.5 # in m
+      min_samples: 10
+      skip_list: ${data.skip_list}
+  - transform: StartZFromZero
+  - transform: ZFilter
+    params:
+      z_min: -1e-5
+      z_max: 50
+      skip_keys: ${data.skip_list}
