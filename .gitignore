@@ -1,5 +1,6 @@
 torch-points3d/data
 torch-points3d/outputs
+torch-points3d/test_files
 **/__pycache__/
 .vscode
 **/.ipynb_checkpoints
