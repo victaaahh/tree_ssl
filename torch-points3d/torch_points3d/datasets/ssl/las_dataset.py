@@ -84,22 +84,19 @@ class LasSSL(Dataset):
             # filtering them and saving them to disk
             first_pt_file = file_idx
             for idx in range(len(label_point_idx)):
-                ### -------- THESE TWO CHECKS COULD BE MADE INTO FILTERS -------- ###
+                # Checks for high_veg_count and min_points could be made into pre_filters instead
                 high_veg_count = np.sum(classification[label_point_idx[idx]] == 5)
                 if high_veg_count < self.min_high_vegetation:
                     labels.drop(idx, inplace=True)
                     continue
-                ### ------------------------------------------------------------- ###
                 pos_pt = pos[label_point_idx[idx]]
                 if features is not None:
                     features_pt = features[label_point_idx[idx]]
                 else:
                     features_pt = None
-                ### -------------------------SECOND ONE-------------------------- ###
                 if pos_pt.shape[0] < self.min_pts:
                     labels.drop(idx, inplace=True)
                     continue
-                ### ------------------------------------------------------------- ###
                 self.center_pos(pos_pt, label_centers[idx])
                 data = self.convert_to_data_(pos_pt, features_pt)
                 if data is None:
