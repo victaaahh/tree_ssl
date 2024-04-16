@@ -24,7 +24,7 @@ min_high_vegetation: 500
 #features: [classification]
 min_points: 500
 transform_type: ???
-first_subsampling: 0.0125
+first_subsampling: 0.0125 # Used for voxelization by minkowskiengine
 xy_radius: 15
 x_scale: 30
 y_scale: 30
