@@ -17,7 +17,7 @@ from torch_points3d.datasets.instance.las_dataset import read_pt
 
 log = logging.getLogger(__name__)
 
-class LasSSL(Dataset):
+class TreeSSL(Dataset):
     def __init__(
         self, root, raw_data_files, transform=None, xy_radius=15, feature_cols=[],
         min_pts: int = 500, min_high_vegetation: int = 100, pre_transform=None
@@ -144,7 +144,7 @@ class LasSSL(Dataset):
         pos -= pos_center
 
 
-class LasDatasetSSL(BaseDataset):
+class TreeSSLDataset(BaseDataset):
     def __init__(self, dataset_opt):
         super().__init__(dataset_opt)
         self.raw_data_files = dataset_opt.raw_data_files
@@ -154,7 +154,7 @@ class LasDatasetSSL(BaseDataset):
         self.min_high_vegetation = dataset_opt.get("min_high_vegetation", 100)
         self.log_train_metrics = dataset_opt.get("log_train_metrics", True)
 
-        self.train_dataset = LasSSL(
+        self.train_dataset = TreeSSL(
             root=self._data_path, raw_data_files=self.raw_data_files, transform=self.train_transform,
             pre_transform=self.pre_transform, xy_radius=self.xy_radius,
             feature_cols=self.feature_cols, min_pts=self.min_pts, min_high_vegetation=self.min_high_vegetation
