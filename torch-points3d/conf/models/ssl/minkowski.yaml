@@ -1,0 +1,7 @@
+# @package models
+
+MinkowskiVICReg:
+  model_name: "SENet34"
+  class: minkowski.MinkowskiVICReg
+  conv_type: "SPARSE"
+  mode: ??
