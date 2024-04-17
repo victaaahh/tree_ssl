@@ -142,6 +142,10 @@ class TreeSSL(Dataset):
         pos_center[:, 1] = center_point[1]
         # The centering is done in place
         pos -= pos_center
+        
+    @property
+    def num_classes(self):
+        return 0
 
 
 class TreeSSLDataset(BaseDataset):
