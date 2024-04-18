@@ -4,4 +4,7 @@ MinkowskiVICReg:
   model_name: "SENet34"
   class: minkowski.MinkowskiVICReg
   conv_type: "SPARSE"
-  mode: ??
+  encoder: "SENet34"
+  D: 3
+  loss_scaling: { "invariance": 25., "variance": 25. , "covariance": 1. }
+  representation_D: 5000
