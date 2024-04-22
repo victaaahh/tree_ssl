@@ -1,17 +1,20 @@
 import logging
 from glob import glob
 from pathlib import Path
+from typing import Sized, Iterator
 
 import geopandas as gpd
 import numpy as np
 import torch
 from shapely.geometry import Point
 from sklearn.neighbors import KDTree
+from torch.utils.data import Sampler
 from torch_geometric.data import Dataset, Data
 from tqdm.auto import tqdm
 
 from torch_points3d.datasets.base_dataset import BaseDataset
 from torch_points3d.metrics.instance_tracker import InstanceTracker
+from torch_points3d.models import model_interface
 
 from torch_points3d.datasets.instance.las_dataset import read_pt
 
@@ -167,3 +170,43 @@ class TreeSSLDataset(BaseDataset):
     def get_tracker(self, wandb_log: bool, tensorboard_log: bool):
         return InstanceTracker(self, wandb_log=wandb_log, use_tensorboard=tensorboard_log,
                                log_train_metrics=self.log_train_metrics)
+        
+    def create_dataloaders(
+        self,
+        model: model_interface.DatasetInterface,
+        batch_size: int,
+        shuffle: bool,
+        drop_last: bool,
+        num_workers: int,
+        precompute_multi_scale: bool):
+        if self.train_dataset:
+            self.train_sampler = DoubleBatchSampler(self.train_dataset, batch_size)
+            if drop_last is False:
+                log.warning("Cannot disable 'drop_last' with DoubleBatchSampler.")
+        if not shuffle:
+            log.warning("shuffle=False is unsupported.")
+        super().create_dataloaders(model, batch_size, shuffle, drop_last, num_workers, precompute_multi_scale)
+        
+
+class DoubleBatchSampler(Sampler[int]):
+    def __init__(self, data_source: Sized, batch_size):
+        super().__init__(data_source)
+        self.batch_size = batch_size
+        self.data_source = data_source
+        
+    def __len__(self) -> int:
+        return len(self.data_source)
+    
+    def __iter__(self) -> Iterator[int]:
+        seed = int(torch.empty((), dtype=torch.int64).random_().item())
+        generator = torch.Generator()
+        generator.manual_seed(seed)
+        
+        iterator = torch.randperm(self.__len__(), generator=generator).tolist()
+        iterator = np.array([[k, k] for k in iterator]).flatten().tolist()
+        iterator = iterator[:(self.__len__() // self.batch_size) * self.batch_size]
+
+        yield from iterator
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(batch_size={self.batch_size})"
