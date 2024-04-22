@@ -13,7 +13,7 @@ from torch_geometric.data import Dataset, Data
 from tqdm.auto import tqdm
 
 from torch_points3d.datasets.base_dataset import BaseDataset
-from torch_points3d.metrics.instance_tracker import InstanceTracker
+from torch_points3d.metrics.base_tracker import BaseTracker
 from torch_points3d.models import model_interface
 
 from torch_points3d.datasets.instance.las_dataset import read_pt
@@ -168,8 +168,7 @@ class TreeSSLDataset(BaseDataset):
         )
         
     def get_tracker(self, wandb_log: bool, tensorboard_log: bool):
-        return InstanceTracker(self, wandb_log=wandb_log, use_tensorboard=tensorboard_log,
-                               log_train_metrics=self.log_train_metrics)
+        return BaseTracker(stage="train", wandb_log=wandb_log, use_tensorboard=tensorboard_log)
         
     def create_dataloaders(
         self,
