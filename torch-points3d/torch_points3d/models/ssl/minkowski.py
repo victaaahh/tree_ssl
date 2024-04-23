@@ -7,13 +7,24 @@ import MinkowskiEngine as ME
 from torch_geometric.data import Batch
 
 class MinkowskiVICReg(VICRegBase):
-    def __init__(self, opt, dataset):
-        super().__init__(opt)
-        self.encoder = initialize_minkowski_unet(opt.encoder_name, dataset.feature_dimension, opt.representation_D, D=opt.D)
+    def __init__(self, opt, model_type, dataset, modules):
+        super().__init__(opt, model_type, dataset, modules)
+        self.encoder = initialize_minkowski_unet(model_name=opt.encoder,
+                                                 in_channels=dataset.feature_dimension,
+                                                 out_channels=opt.representation_D,
+                                                 D=opt.D,
+                                                 **opt.encoder_options)
         
-        # Add non-linearity and batch normalization
-        self.expander = nn.Sequential(nn.Linear(opt.representation_D, opt.expander_dims[0]),
-                                      *[nn.Linear(opt.expander_dims[i], opt.expander_dims[i+1]) for i in range(len(opt.expander_dims)-1)])
+        if opt.expander_activation != "relu":
+            raise NotImplementedError("Only 'relu' is supported right now")
+
+        layers = []
+        for i in range(len(opt.expander_layers)-1):
+            layers.append(nn.ReLU())
+            layers.append(nn.BatchNorm1d(opt.expander_layers[i]))
+            layers.append(nn.Linear(opt.expander_layers[i], opt.expander_layers[i+1]))
+
+        self.expander = nn.Sequential(nn.Linear(opt.representation_D, opt.expander_layers[0]), *layers)
 
     def set_input(self, data, device):
         # unpack data from dataset and apply preprocessing
@@ -21,7 +32,7 @@ class MinkowskiVICReg(VICRegBase):
         # self.batch_idx = data.batch.squeeze()
         
         data = data.to_data_list()
-        # Maybe theres a faster/better way than slicing
+
         X1 = Batch.from_data_list(data[::2])
         X2 = Batch.from_data_list(data[1::2])
 
