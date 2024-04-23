@@ -41,3 +41,15 @@ class MinkowskiVICReg(VICRegBase):
 
         self.input1 = ME.SparseTensor(features=X1.x, coordinates=coords1, device=device)
         self.input2 = ME.SparseTensor(features=X2.x, coordinates=coords2, device=device)
+
+    def forward(self, *args, **kwargs):
+        Y1 = self.encoder(self.input1)
+        Y2 = self.encoder(self.input2)
+        
+        Z1 = self.expander(Y1.F)
+        Z2 = self.expander(Y2.F)
+
+        # Should we split loss into multiple losses and use the inbuilt scaling functionality?
+        # Then perhaps we can monitor them individually
+        self.loss = self.compute_vicreg_loss(Z1, Z2, self.loss_scaling, self.loss_eps, self.loss_gamma)
+ 

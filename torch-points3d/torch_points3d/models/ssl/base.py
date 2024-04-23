@@ -13,23 +13,9 @@ class VICRegBase(BaseModel):
         self.loss_eps = opt.loss_eps
         self.loss_gamma = opt.loss_gamma
 
+        # Not quite sure what this does:
         self.loss_names = ["vicreg_loss"]
         
-        self.encoder = None
-        
-        # Define expander in base class?
-        self.expander = None
-    
-    def forward(self, *args, **kwargs):
-        assert self.encoder is not None and self.expander is not None
-
-        Z1 = self.expander(self.encoder(self.input1))
-        Z2 = self.expander(self.encoder(self.input2))
-        
-        # Should we split loss into multiple losses and use the inbuilt scaling functionality?
-        # Then perhaps we can monitor them individually
-        self.vicreg_loss = self.compute_vicreg_loss(Z1, Z2, self.loss_scaling, self.loss_eps, self.loss_gamma)
-    
     def compute_vicreg_loss(self, Z1, Z2, scaling, eps=0.0001, gamma=1):
         # Batch size and vec size:
         N, D = Z1.shape
@@ -45,8 +31,8 @@ class VICRegBase(BaseModel):
         
         cov_Z1 = (Z1.T @ Z1) / (N - 1)
         cov_Z2 = (Z2.T @ Z2) / (N - 1)
-        cov_Z1_no_diag = cov_Z1[~torch.eye(D)]
-        cov_Z2_no_diag = cov_Z2[~torch.eye(D)]
+        cov_Z1_no_diag = cov_Z1[~torch.eye(D, dtype=bool)]
+        cov_Z2_no_diag = cov_Z2[~torch.eye(D, dtype=bool)]
 
         cov_loss = cov_Z1_no_diag.pow(2).sum() / D + \
                    cov_Z2_no_diag.pow(2).sum() / D
