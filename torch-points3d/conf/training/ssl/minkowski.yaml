@@ -1,8 +1,8 @@
 # @package training
 # Those arguments defines the training hyper-parameters
-epochs: 5
+epochs: 101
 num_workers: 3
-batch_size: 32
+batch_size: 32 # Must be an even number
 cuda: 0
 shuffle: True
 optim:
