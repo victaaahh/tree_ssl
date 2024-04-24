@@ -14,7 +14,7 @@ class VICRegBase(BaseModel):
         self.loss_gamma = opt.loss_gamma
 
         # Not quite sure what this does:
-        self.loss_names = ["vicreg_loss"]
+        self.loss_names = ["vicreg_loss", "var_loss", "inv_loss", "cov_loss"]
         
     def compute_vicreg_loss(self, Z1, Z2, scaling, eps=0.0001, gamma=1):
         # Batch size and vec size:
@@ -38,4 +38,4 @@ class VICRegBase(BaseModel):
                    cov_Z2_no_diag.pow(2).sum() / D
 
         loss = scaling["invariance"] * inv_loss + scaling["variance"] * var_loss + scaling["covariance"] * cov_loss
-        return loss
+        return loss, var_loss, inv_loss, cov_loss

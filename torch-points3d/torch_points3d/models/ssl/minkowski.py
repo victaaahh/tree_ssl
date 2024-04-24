@@ -49,7 +49,5 @@ class MinkowskiVICReg(VICRegBase):
         Z1 = self.expander(Y1.F)
         Z2 = self.expander(Y2.F)
 
-        # Should we split loss into multiple losses and use the inbuilt scaling functionality?
-        # Then perhaps we can monitor them individually
-        self.loss = self.compute_vicreg_loss(Z1, Z2, self.loss_scaling, self.loss_eps, self.loss_gamma)
- 
+        self.vicreg_loss, self.var_loss, self.inv_loss, self.cov_loss = self.compute_vicreg_loss(Z1, Z2, self.loss_scaling, self.loss_eps, self.loss_gamma)
+        self.loss = self.vicreg_loss
