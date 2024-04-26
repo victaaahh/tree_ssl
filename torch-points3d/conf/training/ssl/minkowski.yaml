@@ -9,23 +9,11 @@ optim:
   base_lr: 0.005
   grad_clip: 100
   optimizer:
-#    class: SGD
-#    params:
-#      momentum: 0.98
-#      lr: ${training.optim.base_lr} # The path is cut from training
-#      weight_decay: 1e-3
     class: AdaBelief
     params:
       lr: ${training.optim.base_lr} # The path is cut from training
       weight_decay: 1e-2
   lr_scheduler: ${lr_scheduler}
-#  bn_scheduler:
-#    bn_policy: "step_decay"
-#    params:
-#      bn_momentum: 0.98
-#      bn_decay: 0.9
-#      decay_step: 1000
-#      bn_clip: 1e-2
 weight_name: "latest" # Used during resume, select with model to load from [miou, macc, acc..., latest]
 enable_cudnn: True
 checkpoint_dir: ""
@@ -36,15 +24,26 @@ wandb:
   project: tree_ssl
   log: True
   name: ${model_name}
-  public: True # It will be display the model within wandb log, else not.
+  public: False # It will be display the model within wandb log, else not.
   config:
-    model_name: ${model_name}
+    model: ${model_name}
     batch_size: ${training.batch_size}
     first_subsampling: ${data.first_subsampling}
-    base_lr: ${training.optim.base_lr}
-    activation: ${models.${model_name}.encoder_options.activation}
-    first_stride: ${models.${model_name}.encoder_options.first_stride}
     transform_type: ${data.transform_type}
+    optimizer: ${training.optimizer.class}
+    base_lr: ${training.optim.base_lr}
+
+    encoder: ${models.${model_name}.encoder}
+    encoder_activation: ${models.${model_name}.encoder_options.activation}
+    encoder_first_stride: ${models.${model_name}.encoder_options.first_stride}
+    encoder_global_mean: ${models.${model_name}.encoder_options.global_mean}
+
+    expander_layers: ${models.${model_name}.expander_layers}
+    expander_activation: ${models.${model_name}.expander_activation}
+      
+    loss_scaling: ${models.${model_name}.loss_scaling}
+    loss_eps: ${models.${model_name}.loss_eps}
+    loss_gamma: ${models.${model_name}.loss_gamma}
 
 
 # parameters for TensorBoard Visualization

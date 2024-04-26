@@ -11,9 +11,12 @@ class MinkowskiVICReg(VICRegBase):
         super().__init__(opt, model_type, dataset, modules)
         self.encoder = initialize_minkowski_unet(model_name=opt.encoder,
                                                  in_channels=dataset.feature_dimension,
-                                                 out_channels=opt.representation_D,
+                                                 # For SENet out_channels is only used in the final layer which is overwritten below
+                                                 out_channels=opt.get("representation_D", 512),
                                                  D=opt.D,
                                                  **opt.encoder_options)
+        
+        self.encoder.final = nn.Identity()
         
         if opt.expander_activation != "relu":
             raise NotImplementedError("Only 'relu' is supported right now")
@@ -29,7 +32,7 @@ class MinkowskiVICReg(VICRegBase):
     def set_input(self, data, device):
         # unpack data from dataset and apply preprocessing
 
-        # self.batch_idx = data.batch.squeeze()
+        self.batch_idx = data.batch.squeeze()
         
         data = data.to_data_list()
 
@@ -39,12 +42,17 @@ class MinkowskiVICReg(VICRegBase):
         coords1 = torch.cat([X1.batch.unsqueeze(-1).int(), X1.coords.int()], -1)
         coords2 = torch.cat([X2.batch.unsqueeze(-1).int(), X2.coords.int()], -1)
 
-        self.input1 = ME.SparseTensor(features=X1.x, coordinates=coords1, device=device)
-        self.input2 = ME.SparseTensor(features=X2.x, coordinates=coords2, device=device)
+        input1 = ME.SparseTensor(features=X1.x, coordinates=coords1, device=device)
+        input2 = ME.SparseTensor(features=X2.x, coordinates=coords2, device=device)
+        self.input = (input1, input2)
 
     def forward(self, *args, **kwargs):
-        Y1 = self.encoder(self.input1)
-        Y2 = self.encoder(self.input2)
+        input1, input2 = self.input
+
+        Y1 = self.encoder(input1)
+        Y2 = self.encoder(input2)
+        
+        self.output = (Y1, Y2)
         
         Z1 = self.expander(Y1.F)
         Z2 = self.expander(Y2.F)

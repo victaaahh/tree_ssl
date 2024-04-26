@@ -5,7 +5,6 @@ MinkowskiVICReg:
   conv_type: "SPARSE"
 
   encoder: "SENet34"
-  representation_D: 512
   D: 3
   encoder_options: {
     activation: elu,
