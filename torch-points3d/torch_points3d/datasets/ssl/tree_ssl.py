@@ -178,6 +178,8 @@ class TreeSSLDataset(BaseDataset):
         drop_last: bool,
         num_workers: int,
         precompute_multi_scale: bool):
+        if batch_size % 2 != 0:
+            raise ValueError("Only even batch sizes supported, since we need every point cloud twice.")
         if self.train_dataset:
             self.train_sampler = DoubleBatchSampler(self.train_dataset, batch_size)
             if drop_last is False:
