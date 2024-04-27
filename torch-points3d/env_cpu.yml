@@ -33,6 +33,7 @@ dependencies:
   - h5py
   - plyfile
   - pip
+  - mkl=2024.0
   - pytorch::pytorch=2.0
   - pytorch::torchvision
   - pytorch::cpuonly
