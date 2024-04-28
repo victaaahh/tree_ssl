@@ -16,7 +16,7 @@ defaults:
   - instance/NFI/transforms/fixed-xy-eval
 
 task: ssl
-class: treeSSL.TreeSSLDataset
+class: tree_ssl.TreeSSLDataset
 dataset_name: treeSSL
 dataroot: data
 raw_data_files: [2017/*.laz, 2020-21/*.laz]

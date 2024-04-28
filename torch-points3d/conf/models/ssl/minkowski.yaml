@@ -1,0 +1,20 @@
+# @package models
+
+MinkowskiVICReg:
+  class: minkowski.MinkowskiVICReg
+  conv_type: "SPARSE"
+
+  encoder: "SENet34"
+  D: 3
+  encoder_options: {
+    activation: elu,
+    first_stride: 1,
+    global_pool: mean
+  }
+
+  expander_layers: [ 2048, 2048, 2048 ]
+  expander_activation: relu
+
+  loss_scaling: { "invariance": 25., "variance": 25., "covariance": 1. }
+  loss_eps: 0.0001
+  loss_gamma: 1
