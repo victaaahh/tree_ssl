@@ -25,9 +25,14 @@ min_high_vegetation: 500
 #features: [classification]
 min_points: 500
   
-AGB_validation: False
+AGB_validation: True
 AGB_val_options:
-  data_path: "test"
+  dataset_name: biomass
+  processed_folder: "processed_nfi_reg"
+  targets: {
+    BMag_ha: { task: regression, weight: 0.5 },
+    V_ha: { task: regression, weight: 0.5 },
+  } # metrics: m m cm
 
 transform_type: ???
 first_subsampling: 0.0125 # Used for voxelization by minkowskiengine
