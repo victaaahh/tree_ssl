@@ -2,6 +2,7 @@ import logging
 from glob import glob
 from pathlib import Path
 from typing import Sized, Iterator
+import os
 
 import geopandas as gpd
 import numpy as np
@@ -13,7 +14,7 @@ from torch_geometric.data import Dataset, Data
 from tqdm.auto import tqdm
 
 from torch_points3d.datasets.base_dataset import BaseDataset
-from torch_points3d.metrics.base_tracker import BaseTracker
+from torch_points3d.metrics.ssl_tracker import SSLTracker
 from torch_points3d.models import model_interface
 
 from torch_points3d.datasets.instance.las_dataset import Las, read_pt
@@ -168,19 +169,26 @@ class TreeSSLDataset(BaseDataset):
         )
         
         if dataset_opt.get("AGB_validation", False):
+            AGB_path = os.path.join(self.dataset_opt.dataroot, self.dataset_opt.AGB_val_options.dataset_name)
+            AGB_processed_folder = dataset_opt.AGB_val_options.get("processed_folder", "processed")
+            AGB_areas_file = AGB_path / Path(AGB_processed_folder) / "areas.pt"
+            if not AGB_areas_file.exists(): # Perhaps a better check is needed
+                raise Exception("Please process AGB data beforehand")
+
+            AGB_areas = torch.load(AGB_areas_file)
+            
             self.val_dataset = Las(
-                root=self._data_path, areas=self.areas, split="val",
-                targets=self.targets, feature_cols=self.features, feature_scaling_dict=feature_scaling_dict,
-                stats=dataset_opt.stats, transform=self.val_transform, pre_transform=self.pre_transform,
-                save_processed=save_processed, processed_folder=processed_folder, in_memory=False,
-                xy_radius=self.xy_radius, save_local_stats=save_local_stats,
-                min_pts_outer=self.min_pts_outer, min_pts_inner=self.min_pts_inner,
-                pos_dict=pos_dict, features_dict=features_dict,
-                pos_tree_dict=pos_tree_dict, crs_dict=crs_dict
+                root=AGB_path, areas=AGB_areas, split="val",
+                targets=self.dataset_opt.AGB_val_options.targets,
+                feature_cols=[], feature_scaling_dict=None, stats=[],
+                transform=self.val_transform, pre_transform=self.pre_transform,
+                save_processed=True, processed_folder=AGB_processed_folder,
+                in_memory=False, xy_radius=self.xy_radius, save_local_stats=False,
+                min_pts_outer=self.min_pts, min_pts_inner=0,
             )
         
     def get_tracker(self, wandb_log: bool, tensorboard_log: bool):
-        return BaseTracker(stage="train", wandb_log=wandb_log, use_tensorboard=tensorboard_log)
+        return SSLTracker(stage="train", wandb_log=wandb_log, use_tensorboard=tensorboard_log)
         
     def create_dataloaders(
         self,
@@ -197,7 +205,7 @@ class TreeSSLDataset(BaseDataset):
             if drop_last is False:
                 log.warning("Cannot disable 'drop_last' with DoubleBatchSampler.")
         if not shuffle:
-            log.warning("shuffle=False is unsupported.")
+            log.warning("shuffle=False is unsupported. Continuing with shuffle.")
         super().create_dataloaders(model, batch_size, shuffle, drop_last, num_workers, precompute_multi_scale)
         
 
