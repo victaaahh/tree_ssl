@@ -16,7 +16,7 @@ from torch_points3d.datasets.base_dataset import BaseDataset
 from torch_points3d.metrics.base_tracker import BaseTracker
 from torch_points3d.models import model_interface
 
-from torch_points3d.datasets.instance.las_dataset import read_pt
+from torch_points3d.datasets.instance.las_dataset import Las, read_pt
 
 log = logging.getLogger(__name__)
 
@@ -166,6 +166,18 @@ class TreeSSLDataset(BaseDataset):
             pre_transform=self.pre_transform, xy_radius=self.xy_radius,
             feature_cols=self.feature_cols, min_pts=self.min_pts, min_high_vegetation=self.min_high_vegetation
         )
+        
+        if dataset_opt.get("AGB_validation", False):
+            self.val_dataset = Las(
+                root=self._data_path, areas=self.areas, split="val",
+                targets=self.targets, feature_cols=self.features, feature_scaling_dict=feature_scaling_dict,
+                stats=dataset_opt.stats, transform=self.val_transform, pre_transform=self.pre_transform,
+                save_processed=save_processed, processed_folder=processed_folder, in_memory=False,
+                xy_radius=self.xy_radius, save_local_stats=save_local_stats,
+                min_pts_outer=self.min_pts_outer, min_pts_inner=self.min_pts_inner,
+                pos_dict=pos_dict, features_dict=features_dict,
+                pos_tree_dict=pos_tree_dict, crs_dict=crs_dict
+            )
         
     def get_tracker(self, wandb_log: bool, tensorboard_log: bool):
         return BaseTracker(stage="train", wandb_log=wandb_log, use_tensorboard=tensorboard_log)

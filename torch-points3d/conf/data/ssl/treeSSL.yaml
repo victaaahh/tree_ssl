@@ -20,9 +20,15 @@ class: tree_ssl.TreeSSLDataset
 dataset_name: treeSSL
 dataroot: data
 raw_data_files: [2017/*.laz, 2020-21/*.laz]
+
 min_high_vegetation: 500
 #features: [classification]
 min_points: 500
+  
+AGB_validation: False
+AGB_val_options:
+  data_path: "test"
+
 transform_type: ???
 first_subsampling: 0.0125 # Used for voxelization by minkowskiengine
 xy_radius: 15
