@@ -3,6 +3,9 @@ from typing import Dict, Any
 import torch
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
+from sklearn.decomposition import PCA
+
+from wandb import Table
 
 from torch_points3d.metrics.base_tracker import BaseTracker
 from torch_points3d.models import model_interface
@@ -16,17 +19,20 @@ class SSLTracker(BaseTracker):
         self.val_representation = []
         self.labels = []
         self.AGB_R2_score = None
+        self.representations = None
         
-    def get_metrics(self, verbose=False) -> Dict[str, Any]:
+    def get_metrics(self, epoch, verbose=False) -> Dict[str, Any]:
         metrics = self.get_loss()
         if self.AGB_R2_score:
             metrics["AGB_R2_score"] = self.AGB_R2_score
+        if self.representations:
+            metrics[f"representations_{epoch}"] = self.representations
 
         return metrics
     
     def finalise(self, *args, **kwargs):
         self._finalised = True
-        if self._stage == "train":
+        if self._stage == "val":
             # Compute AGB metrics and insert in metrics dict
             X = torch.cat(self.val_representation, dim=0).numpy()
             y = torch.cat(self.labels, dim=0).numpy()
@@ -36,8 +42,28 @@ class SSLTracker(BaseTracker):
             reg.fit(X_train, y_train)
             score = reg.score(X_test, y_test)
             self.AGB_R2_score = score
+            
+            # dimensionality reduction logging of embeddings
+            n_dim = 100
+            pca = PCA(n_dim)
+            self.representations = Table(columns=[f"D{i}" for i in range(n_dim)], data=pca.fit_transform(X))
     
     def track(self, model: model_interface.TrackerInterface, **kwargs):
         super().track(model, **kwargs)
-        self.val_representation.append(model.get_output())
-        self.labels.append(model.get_labels())
+        if self._stage == "val":
+            self.val_representation.append(model.get_output().cpu())
+            self.labels.append(model.get_labels().cpu())
+            
+    def get_publish_metrics(self, epoch):
+        """Publishes the current metrics to wandb and tensorboard
+        Arguments:
+            step: current epoch
+        """
+        metrics = self.get_metrics(epoch)
+
+        return {
+            "stage": self._stage,
+            "epoch": epoch,
+            "current_metrics": self._remove_stage_from_metric_keys(self._stage, metrics),
+            "all_metrics": metrics
+        }
