@@ -68,3 +68,4 @@ class MinkowskiVICReg(VICRegBase):
             self.loss = self.vicreg_loss
         else:
             self.output = self.encoder(self.input).F
+            self.vicreg_loss, self.var_loss, self.inv_loss, self.cov_loss = None, None, None, None
