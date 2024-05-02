@@ -44,3 +44,5 @@ pre_transform:
       z_min: -1e-5
       z_max: 50
       skip_keys: ${data.skip_list}
+      
+# training_num_samples: 469 # Determines the amount of samples that is considered an epoch
