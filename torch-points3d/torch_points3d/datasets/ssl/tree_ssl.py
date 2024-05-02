@@ -1,7 +1,7 @@
 import logging
 from glob import glob
 from pathlib import Path
-from typing import Sized, Iterator
+from typing import Sized, Iterator, Optional
 
 import geopandas as gpd
 import numpy as np
@@ -182,32 +182,53 @@ class TreeSSLDataset(BaseDataset):
             raise ValueError("Only even batch sizes supported, since we need every point cloud twice.")
         if self.train_dataset:
             self.train_sampler = DoubleBatchSampler(self.train_dataset, batch_size)
-            if drop_last is False:
-                log.warning("Cannot disable 'drop_last' with DoubleBatchSampler.")
+            #if drop_last is False:
+            #    log.warning("Cannot disable 'drop_last' with DoubleBatchSampler.")
         if not shuffle:
             log.warning("shuffle=False is unsupported.")
         super().create_dataloaders(model, batch_size, shuffle, drop_last, num_workers, precompute_multi_scale)
         
 
 class DoubleBatchSampler(Sampler[int]):
-    def __init__(self, data_source: Sized, batch_size):
+    '''Samples each element randomly without replacement and yields each of them twice in
+       a row. num_samples argument can be used to set the amount of elements to sample,
+       each of which will then be sampled twice. The length is therefore num_samples*2.'''
+    def __init__(self, data_source: Sized, batch_size, drop_last, num_samples: Optional[int] = None):
         super().__init__(data_source)
         self.batch_size = batch_size
         self.data_source = data_source
+        self._num_samples = num_samples
+        self.drop_last = drop_last
+        
+    @property
+    def num_samples(self) -> int:
+        if self._num_samples is None:
+            return len(self.data_source)
+        return self._num_samples
         
     def __len__(self) -> int:
-        return len(self.data_source)
+        return self.num_samples * 2
     
     def __iter__(self) -> Iterator[int]:
+        n = len(self.data_source)
+
         seed = int(torch.empty((), dtype=torch.int64).random_().item())
         generator = torch.Generator()
         generator.manual_seed(seed)
         
-        iterator = torch.randperm(self.__len__(), generator=generator).tolist()
-        iterator = np.array([[k, k] for k in iterator]).flatten().tolist()
-        iterator = iterator[:(self.__len__() // self.batch_size) * self.batch_size]
+        left_over = 0
+        for _ in range(self.num_samples // n):
+            iterator = torch.randperm(n, generator=generator).tolist()
+            iterator = np.array([[k, k] for k in iterator]).flatten().tolist()
+            left_over += n % self.batch_size
+            yield from iterator
 
+        iterator = torch.randperm(n, generator=generator).tolist()[:self.num_samples % n] # Isnt this 0 when num_samples is not specified?
+        iterator = np.array([[k, k] for k in iterator]).flatten().tolist()
+        if self.drop_last:
+            pass
+            #iterator = iterator[]
         yield from iterator
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(batch_size={self.batch_size})"
+        return f"{self.__class__.__name__}(batch_size={self.batch_size}, drop_last={self.drop_last}, num_samples={self._num_samples})"
