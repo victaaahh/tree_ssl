@@ -160,6 +160,8 @@ class TreeSSLDataset(BaseDataset):
         self.min_pts = dataset_opt.get("min_pts", 500)
         self.min_high_vegetation = dataset_opt.get("min_high_vegetation", 100)
         self.log_train_metrics = dataset_opt.get("log_train_metrics", True)
+        
+        self.sampler_num_samples = dataset_opt.get("training_num_samples", None)
 
         self.train_dataset = TreeSSL(
             root=self._data_path, raw_data_files=self.raw_data_files, transform=self.train_transform,
@@ -181,7 +183,7 @@ class TreeSSLDataset(BaseDataset):
         if batch_size % 2 != 0:
             raise ValueError("Only even batch sizes supported, since we need every point cloud twice.")
         if self.train_dataset:
-            self.train_sampler = DoubleBatchSampler(self.train_dataset, batch_size)
+            self.train_sampler = DoubleBatchSampler(self.train_dataset, batch_size, drop_last, self.sampler_num_samples)
             #if drop_last is False:
             #    log.warning("Cannot disable 'drop_last' with DoubleBatchSampler.")
         if not shuffle:
@@ -210,25 +212,29 @@ class DoubleBatchSampler(Sampler[int]):
         return self.num_samples * 2
     
     def __iter__(self) -> Iterator[int]:
-        n = len(self.data_source)
-
         seed = int(torch.empty((), dtype=torch.int64).random_().item())
         generator = torch.Generator()
         generator.manual_seed(seed)
         
-        left_over = 0
-        for _ in range(self.num_samples // n):
+        n = len(self.data_source)
+        full_iters = self.num_samples // n
+        left_over = self.num_samples % n
+        extra = full_iters * n % self.batch_size
+        for i in range(full_iters):
             iterator = torch.randperm(n, generator=generator).tolist()
+            if i == full_iters-1 and self.drop_last and left_over + extra < self.batch_size:
+                iterator = iterator[:-extra]
             iterator = np.array([[k, k] for k in iterator]).flatten().tolist()
-            left_over += n % self.batch_size
             yield from iterator
 
-        iterator = torch.randperm(n, generator=generator).tolist()[:self.num_samples % n] # Isnt this 0 when num_samples is not specified?
-        iterator = np.array([[k, k] for k in iterator]).flatten().tolist()
-        if self.drop_last:
-            pass
-            #iterator = iterator[]
-        yield from iterator
+        if self.drop_last and left_over + extra >= self.batch_size:
+            iterator = torch.randperm(n, generator=generator).tolist()[:left_over-(left_over+extra)%self.batch_size]
+            iterator = np.array([[k, k] for k in iterator]).flatten().tolist()
+            yield from iterator
+        elif not self.drop_last:
+            iterator = torch.randperm(n, generator=generator).tolist()[:left_over]
+            iterator = np.array([[k, k] for k in iterator]).flatten().tolist()
+            yield from iterator
 
     def __repr__(self):
         return f"{self.__class__.__name__}(batch_size={self.batch_size}, drop_last={self.drop_last}, num_samples={self._num_samples})"
