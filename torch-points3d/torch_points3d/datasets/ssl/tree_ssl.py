@@ -9,14 +9,13 @@ import numpy as np
 import torch
 from shapely.geometry import Point
 from sklearn.neighbors import KDTree
-from torch.utils.data import Sampler
+from torch.utils.data import Sampler, ConcatDataset
 from torch_geometric.data import Dataset, Data
 from tqdm.auto import tqdm
 
 from torch_points3d.datasets.base_dataset import BaseDataset
 from torch_points3d.metrics.ssl_tracker import SSLTracker
 from torch_points3d.models import model_interface
-
 from torch_points3d.datasets.instance.las_dataset import Las, read_pt
 
 log = logging.getLogger(__name__)
@@ -178,8 +177,18 @@ class TreeSSLDataset(BaseDataset):
                 raise Exception("Please process AGB data beforehand")
 
             AGB_areas = torch.load(AGB_areas_file)
-            
-            self.val_dataset = Las(
+
+            AGB_train = Las(
+                root=AGB_path, areas=AGB_areas, split="train",
+                targets=self.dataset_opt.AGB_val_options.targets,
+                feature_cols=[], feature_scaling_dict=None, stats=[],
+                transform=self.val_transform, pre_transform=self.pre_transform,
+                save_processed=True, processed_folder=AGB_processed_folder,
+                in_memory=False, xy_radius=self.xy_radius, save_local_stats=False,
+                min_pts_outer=self.min_pts, min_pts_inner=0,
+            )
+
+            AGB_val = Las(
                 root=AGB_path, areas=AGB_areas, split="val",
                 targets=self.dataset_opt.AGB_val_options.targets,
                 feature_cols=[], feature_scaling_dict=None, stats=[],
@@ -188,6 +197,8 @@ class TreeSSLDataset(BaseDataset):
                 in_memory=False, xy_radius=self.xy_radius, save_local_stats=False,
                 min_pts_outer=self.min_pts, min_pts_inner=0,
             )
+            
+            self.val_dataset = ConcatDataset([AGB_train, AGB_val])
         
     def get_tracker(self, wandb_log: bool, tensorboard_log: bool):
         return SSLTracker(stage="train", wandb_log=wandb_log, use_tensorboard=tensorboard_log)

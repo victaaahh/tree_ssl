@@ -11,8 +11,9 @@ from torch_points3d.metrics.base_tracker import BaseTracker
 from torch_points3d.models import model_interface
 
 class SSLTracker(BaseTracker):
-    def __init__(self, stage: str, wandb_log: bool, use_tensorboard: bool):
+    def __init__(self, dataset, stage: str, wandb_log: bool, use_tensorboard: bool):
         super().__init__(stage, wandb_log, use_tensorboard)
+        self.val_cumulative_sizes = dataset.val_dataset.cumulative_sizes
         
     def reset(self, stage="train"):
         super().reset(stage)
@@ -33,17 +34,20 @@ class SSLTracker(BaseTracker):
             # Compute AGB metrics and insert in metrics dict
             X = torch.cat(self.val_representation, dim=0).numpy()
             y = torch.cat(self.labels, dim=0).numpy()
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
+            X_train = X[:self.val_cumulative_sizes[0]]
+            X_val = X[self.val_cumulative_sizes[0]:]
+            y_train = y[:self.val_cumulative_sizes[0]]
+            y_val = y[self.val_cumulative_sizes[0]:]
 
             reg = LinearRegression()
             reg.fit(X_train, y_train)
-            score = reg.score(X_test, y_test)
+            score = reg.score(X_val, y_val)
             self.AGB_R2_score = score
             
             # dimensionality reduction logging of embeddings
-            n_dim = 100
+            n_dim = kwargs.get("representations_logging_dim", 50)
             pca = PCA(n_dim)
-            self.representations.add(wandb.Table(columns=[f"D{i}" for i in range(n_dim)], data=pca.fit_transform(X)), "representations")
+            self.representations.add(wandb.Table(columns=[f"D{i}" for i in range(n_dim)], data=pca.fit_transform(X_val)), "representations")
     
     def track(self, model: model_interface.TrackerInterface, **kwargs):
         super().track(model, **kwargs)
@@ -51,20 +55,6 @@ class SSLTracker(BaseTracker):
             self.val_representation.append(model.get_output().cpu())
             self.labels.append(model.get_labels().cpu())
             
-    def get_publish_metrics(self, epoch):
-        """Publishes the current metrics to wandb and tensorboard
-        Arguments:
-            step: current epoch
-        """
-        metrics = self.get_metrics()
-
-        return {
-            "stage": self._stage,
-            "epoch": epoch,
-            "current_metrics": self._remove_stage_from_metric_keys(self._stage, metrics),
-            "all_metrics": metrics
-        }
-    
     def publish_to_wandb(self, metrics, epoch):
         wandb.log_artifact(self.representations)
         super().publish_to_wandb(metrics, epoch)
