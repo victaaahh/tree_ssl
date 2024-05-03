@@ -201,7 +201,7 @@ class TreeSSLDataset(BaseDataset):
             self.val_dataset = ConcatDataset([AGB_train, AGB_val])
         
     def get_tracker(self, wandb_log: bool, tensorboard_log: bool):
-        return SSLTracker(stage="train", wandb_log=wandb_log, use_tensorboard=tensorboard_log)
+        return SSLTracker(self, stage="train", wandb_log=wandb_log, use_tensorboard=tensorboard_log)
         
     def create_dataloaders(
         self,
