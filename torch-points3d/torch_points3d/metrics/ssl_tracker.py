@@ -5,7 +5,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.decomposition import PCA
 
-from wandb import Table
+import wandb
 
 from torch_points3d.metrics.base_tracker import BaseTracker
 from torch_points3d.models import model_interface
@@ -19,15 +19,12 @@ class SSLTracker(BaseTracker):
         self.val_representation = []
         self.labels = []
         self.AGB_R2_score = None
-        self.representations = None
+        self.representations = wandb.Artifact(f"validation_representations_{wandb.run.id}", type="representations")
         
-    def get_metrics(self, epoch, verbose=False) -> Dict[str, Any]:
+    def get_metrics(self, verbose=False) -> Dict[str, Any]:
         metrics = self.get_loss()
         if self.AGB_R2_score:
             metrics["AGB_R2_score"] = self.AGB_R2_score
-        if self.representations:
-            metrics[f"representations_{epoch}"] = self.representations
-
         return metrics
     
     def finalise(self, *args, **kwargs):
@@ -46,7 +43,7 @@ class SSLTracker(BaseTracker):
             # dimensionality reduction logging of embeddings
             n_dim = 100
             pca = PCA(n_dim)
-            self.representations = Table(columns=[f"D{i}" for i in range(n_dim)], data=pca.fit_transform(X))
+            self.representations.add(wandb.Table(columns=[f"D{i}" for i in range(n_dim)], data=pca.fit_transform(X)), "representations")
     
     def track(self, model: model_interface.TrackerInterface, **kwargs):
         super().track(model, **kwargs)
@@ -59,7 +56,7 @@ class SSLTracker(BaseTracker):
         Arguments:
             step: current epoch
         """
-        metrics = self.get_metrics(epoch)
+        metrics = self.get_metrics()
 
         return {
             "stage": self._stage,
@@ -67,3 +64,7 @@ class SSLTracker(BaseTracker):
             "current_metrics": self._remove_stage_from_metric_keys(self._stage, metrics),
             "all_metrics": metrics
         }
+    
+    def publish_to_wandb(self, metrics, epoch):
+        wandb.log_artifact(self.representations)
+        super().publish_to_wandb(metrics, epoch)
