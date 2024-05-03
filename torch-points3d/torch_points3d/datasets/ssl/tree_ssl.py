@@ -1,7 +1,7 @@
 import logging
 from glob import glob
 from pathlib import Path
-from typing import Sized, Iterator, Optional
+from typing import Sized, Iterator, Optional, Iterable
 import os
 
 import geopandas as gpd
@@ -198,7 +198,12 @@ class TreeSSLDataset(BaseDataset):
                 min_pts_outer=self.min_pts, min_pts_inner=0,
             )
             
-            self.val_dataset = ConcatDataset([AGB_train, AGB_val])
+            class AGB_concat(ConcatDataset):
+                def __init__(self, datasets: Iterable[Dataset]) -> None:
+                    super().__init__(datasets)
+                    self.has_labels = True
+            
+            self.val_dataset = AGB_concat([AGB_train, AGB_val])
         
     def get_tracker(self, wandb_log: bool, tensorboard_log: bool):
         return SSLTracker(self, stage="train", wandb_log=wandb_log, use_tensorboard=tensorboard_log)
