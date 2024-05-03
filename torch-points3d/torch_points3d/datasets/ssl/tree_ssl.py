@@ -1,22 +1,22 @@
 import logging
 from glob import glob
 from pathlib import Path
-from typing import Sized, Iterator, Optional
+from typing import Sized, Iterator, Optional, Iterable
+import os
 
 import geopandas as gpd
 import numpy as np
 import torch
 from shapely.geometry import Point
 from sklearn.neighbors import KDTree
-from torch.utils.data import Sampler
+from torch.utils.data import Sampler, ConcatDataset
 from torch_geometric.data import Dataset, Data
 from tqdm.auto import tqdm
 
 from torch_points3d.datasets.base_dataset import BaseDataset
-from torch_points3d.metrics.base_tracker import BaseTracker
+from torch_points3d.metrics.ssl_tracker import SSLTracker
 from torch_points3d.models import model_interface
-
-from torch_points3d.datasets.instance.las_dataset import read_pt
+from torch_points3d.datasets.instance.las_dataset import Las, read_pt
 
 log = logging.getLogger(__name__)
 
@@ -169,8 +169,44 @@ class TreeSSLDataset(BaseDataset):
             feature_cols=self.feature_cols, min_pts=self.min_pts, min_high_vegetation=self.min_high_vegetation
         )
         
+        if dataset_opt.get("AGB_validation", False):
+            AGB_path = os.path.join(self.dataset_opt.dataroot, self.dataset_opt.AGB_val_options.dataset_name)
+            AGB_processed_folder = dataset_opt.AGB_val_options.get("processed_folder", "processed")
+            AGB_areas_file = AGB_path / Path(AGB_processed_folder) / "areas.pt"
+            if not AGB_areas_file.exists(): # Perhaps a better check is needed
+                raise Exception("Please process AGB data beforehand")
+
+            AGB_areas = torch.load(AGB_areas_file)
+
+            AGB_train = Las(
+                root=AGB_path, areas=AGB_areas, split="train",
+                targets=self.dataset_opt.AGB_val_options.targets,
+                feature_cols=[], feature_scaling_dict=None, stats=[],
+                transform=self.val_transform, pre_transform=self.pre_transform,
+                save_processed=True, processed_folder=AGB_processed_folder,
+                in_memory=False, xy_radius=self.xy_radius, save_local_stats=False,
+                min_pts_outer=self.min_pts, min_pts_inner=0,
+            )
+
+            AGB_val = Las(
+                root=AGB_path, areas=AGB_areas, split="val",
+                targets=self.dataset_opt.AGB_val_options.targets,
+                feature_cols=[], feature_scaling_dict=None, stats=[],
+                transform=self.val_transform, pre_transform=self.pre_transform,
+                save_processed=True, processed_folder=AGB_processed_folder,
+                in_memory=False, xy_radius=self.xy_radius, save_local_stats=False,
+                min_pts_outer=self.min_pts, min_pts_inner=0,
+            )
+            
+            class AGB_concat(ConcatDataset):
+                def __init__(self, datasets: Iterable[Dataset]) -> None:
+                    super().__init__(datasets)
+                    self.has_labels = True
+            
+            self.val_dataset = AGB_concat([AGB_train, AGB_val])
+        
     def get_tracker(self, wandb_log: bool, tensorboard_log: bool):
-        return BaseTracker(stage="train", wandb_log=wandb_log, use_tensorboard=tensorboard_log)
+        return SSLTracker(self, stage="train", wandb_log=wandb_log, use_tensorboard=tensorboard_log)
         
     def create_dataloaders(
         self,
@@ -187,7 +223,7 @@ class TreeSSLDataset(BaseDataset):
             #if drop_last is False:
             #    log.warning("Cannot disable 'drop_last' with DoubleBatchSampler.")
         if not shuffle:
-            log.warning("shuffle=False is unsupported.")
+            log.warning("shuffle=False is unsupported. Continuing with shuffle.")
         super().create_dataloaders(model, batch_size, shuffle, drop_last, num_workers, precompute_multi_scale)
         
 

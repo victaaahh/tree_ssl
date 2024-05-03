@@ -34,28 +34,38 @@ class MinkowskiVICReg(VICRegBase):
 
         self.batch_idx = data.batch.squeeze()
         
-        data = data.to_data_list()
+        if self.training:
+            data = data.to_data_list()
 
-        X1 = Batch.from_data_list(data[::2])
-        X2 = Batch.from_data_list(data[1::2])
+            X1 = Batch.from_data_list(data[::2])
+            X2 = Batch.from_data_list(data[1::2])
 
-        coords1 = torch.cat([X1.batch.unsqueeze(-1).int(), X1.coords.int()], -1)
-        coords2 = torch.cat([X2.batch.unsqueeze(-1).int(), X2.coords.int()], -1)
+            coords1 = torch.cat([X1.batch.unsqueeze(-1).int(), X1.coords.int()], -1)
+            coords2 = torch.cat([X2.batch.unsqueeze(-1).int(), X2.coords.int()], -1)
 
-        input1 = ME.SparseTensor(features=X1.x, coordinates=coords1, device=device)
-        input2 = ME.SparseTensor(features=X2.x, coordinates=coords2, device=device)
-        self.input = (input1, input2)
+            input1 = ME.SparseTensor(features=X1.x, coordinates=coords1, device=device)
+            input2 = ME.SparseTensor(features=X2.x, coordinates=coords2, device=device)
+
+            self.input = (input1, input2)
+        else:
+            coords = torch.cat([data.batch.unsqueeze(-1).int(), data.coords.int()], -1)
+            self.input = ME.SparseTensor(features=data.x, coordinates=coords, device=device)
+            self.labels = data.y_reg[::2]
 
     def forward(self, *args, **kwargs):
-        input1, input2 = self.input
+        if self.training:
+            input1, input2 = self.input
 
-        Y1 = self.encoder(input1)
-        Y2 = self.encoder(input2)
-        
-        self.output = (Y1, Y2)
-        
-        Z1 = self.expander(Y1.F)
-        Z2 = self.expander(Y2.F)
+            Y1 = self.encoder(input1).F
+            Y2 = self.encoder(input2).F
+            
+            self.output = (Y1, Y2)
+            
+            Z1 = self.expander(Y1)
+            Z2 = self.expander(Y2)
 
-        self.vicreg_loss, self.var_loss, self.inv_loss, self.cov_loss = self.compute_vicreg_loss(Z1, Z2, self.loss_scaling, self.loss_eps, self.loss_gamma)
-        self.loss = self.vicreg_loss
+            self.vicreg_loss, self.var_loss, self.inv_loss, self.cov_loss = self.compute_vicreg_loss(Z1, Z2, self.loss_scaling, self.loss_eps, self.loss_gamma)
+            self.loss = self.vicreg_loss
+        else:
+            self.output = self.encoder(self.input).F
+            self.vicreg_loss, self.var_loss, self.inv_loss, self.cov_loss = None, None, None, None
