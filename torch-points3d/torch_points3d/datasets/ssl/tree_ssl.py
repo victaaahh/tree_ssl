@@ -219,7 +219,7 @@ class TreeSSLDataset(BaseDataset):
         if batch_size % 2 != 0:
             raise ValueError("Only even batch sizes supported, since we need every point cloud twice.")
         if self.train_dataset:
-            self.train_sampler = DoubleBatchSampler(self.train_dataset, batch_size, drop_last, self.sampler_num_samples)
+            self.train_sampler = DoubleBatchSampler(self.train_dataset, self.sampler_num_samples)
             #if drop_last is False:
             #    log.warning("Cannot disable 'drop_last' with DoubleBatchSampler.")
         if not shuffle:
@@ -231,12 +231,10 @@ class DoubleBatchSampler(Sampler[int]):
     '''Samples each element randomly without replacement and yields each of them twice in
        a row. num_samples argument can be used to set the amount of elements to sample,
        each of which will then be sampled twice. The length is therefore num_samples*2.'''
-    def __init__(self, data_source: Sized, batch_size, drop_last, num_samples: Optional[int] = None):
+    def __init__(self, data_source: Sized, num_samples: Optional[int] = None):
         super().__init__(data_source)
-        self.batch_size = batch_size
         self.data_source = data_source
         self._num_samples = num_samples
-        self.drop_last = drop_last
         
     @property
     def num_samples(self) -> int:
@@ -255,22 +253,14 @@ class DoubleBatchSampler(Sampler[int]):
         n = len(self.data_source)
         full_iters = self.num_samples // n
         left_over = self.num_samples % n
-        extra = full_iters * n % self.batch_size
         for i in range(full_iters):
             iterator = torch.randperm(n, generator=generator).tolist()
-            if i == full_iters-1 and self.drop_last and left_over + extra < self.batch_size:
-                iterator = iterator[:-extra]
             iterator = np.array([[k, k] for k in iterator]).flatten().tolist()
             yield from iterator
 
-        if self.drop_last and left_over + extra >= self.batch_size:
-            iterator = torch.randperm(n, generator=generator).tolist()[:left_over-(left_over+extra)%self.batch_size]
-            iterator = np.array([[k, k] for k in iterator]).flatten().tolist()
-            yield from iterator
-        elif not self.drop_last:
-            iterator = torch.randperm(n, generator=generator).tolist()[:left_over]
-            iterator = np.array([[k, k] for k in iterator]).flatten().tolist()
-            yield from iterator
+        iterator = torch.randperm(n, generator=generator).tolist()[:left_over]
+        iterator = np.array([[k, k] for k in iterator]).flatten().tolist()
+        yield from iterator
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(batch_size={self.batch_size}, drop_last={self.drop_last}, num_samples={self._num_samples})"
+        return f"{self.__class__.__name__}(num_samples={self._num_samples})"
