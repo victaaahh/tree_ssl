@@ -12,6 +12,7 @@ from sklearn.neighbors import KDTree
 from torch.utils.data import Sampler, ConcatDataset
 from torch_geometric.data import Dataset, Data
 from tqdm.auto import tqdm
+import h5py
 
 from torch_points3d.datasets.base_dataset import BaseDataset
 from torch_points3d.metrics.ssl_tracker import SSLTracker
@@ -44,7 +45,8 @@ class TreeSSL(Dataset):
     def process(self):
         log.info("### Processing starting!")
 
-        (Path(self.processed_dir) / "pt_files").mkdir(exist_ok=True)
+        #(Path(self.processed_dir) / "pt_files").mkdir(exist_ok=True)
+        h5_file = h5py.File(Path(self.processed_dir) / "point_clouds.hdf5", "w")
         (Path(self.processed_dir) / "label_files").mkdir(exist_ok=True)
 
         raw_files = []
@@ -104,24 +106,34 @@ class TreeSSL(Dataset):
                 data = self.convert_to_data_(pos_pt, features_pt)
                 if data is None:
                     continue
-                pt_file = Path(self.processed_dir) / "pt_files" / f"{file_idx}.pt"
-                torch.save(data, pt_file)
+                h5_file.create_dataset(f"{file_idx}/pos", data=data.pos.numpy())
+                if data.x is not None:
+                    h5_file.create_dataset(f"{file_idx}/x", data=data.x.numpy())
+                #pt_file = Path(self.processed_dir) / "pt_files" / f"{file_idx}.pt"
+                #torch.save(data, pt_file)
                 file_idx += 1
 
             # save label file with name corresponding to pt file names
             label_file = Path(self.processed_dir) / "label_files" / f"{first_pt_file}_{file_idx-1}.gpkg"
             labels.to_file(label_file, driver="GPKG")
 
+        h5_file.close()
         (Path(self.processed_dir) / "done.flag").touch()
         log.info("### Processing done!")
     
     def get(self, idx):
-        data = torch.load(Path(self.processed_dir) / "pt_files" / f"{idx}.pt")
+        #data = torch.load(Path(self.processed_dir) / "pt_files" / f"{idx}.pt")
+        with h5py.File(Path(self.processed_dir) / "point_clouds.hdf5", "r") as file:
+            data = Data()
+            for key, val in file[f"{idx}"].items():
+                data[key] = torch.from_numpy(val[()])
         return data
     
     def len(self):
-        files = glob(str(Path(self.processed_dir) / "pt_files" / "*.pt"))
-        return len(files)
+        #files = glob(str(Path(self.processed_dir) / "pt_files" / "*.pt"))
+        with h5py.File(Path(self.processed_dir) / "point_clouds.hdf5", "r") as file:
+            len_ = len(file.keys())
+        return len_
 
     def convert_to_data_(self, pos, features=None):
         '''Makes data object and applies pre_filter and pre_transform'''
