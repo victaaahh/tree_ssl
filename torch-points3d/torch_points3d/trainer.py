@@ -194,7 +194,7 @@ class Trainer:
     def train(self):
         self._is_training = True
 
-        for epoch in range(self._checkpoint.start_epoch, self._cfg.training.epochs):
+        for epoch in range(self._checkpoint.start_epoch, self._cfg.training.epochs+1):
             log.info("EPOCH %i / %i", epoch, self._cfg.training.epochs)
 
             self._train_epoch(epoch)
