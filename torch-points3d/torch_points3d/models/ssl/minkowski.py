@@ -54,10 +54,8 @@ class MinkowskiVICReg(VICRegBase):
 
     def forward(self, *args, **kwargs):
         if self.training:
-            input1, input2 = self.input
-
-            Y1 = self.encoder(input1).F
-            Y2 = self.encoder(input2).F
+            Y1 = self.encoder(self.input[0]).F
+            Y2 = self.encoder(self.input[1]).F
             
             self.output = (Y1, Y2)
             
