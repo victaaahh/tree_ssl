@@ -45,7 +45,6 @@ class TreeSSL(Dataset):
     def process(self):
         log.info("### Processing starting!")
 
-        #(Path(self.processed_dir) / "pt_files").mkdir(exist_ok=True)
         h5_file = h5py.File(Path(self.processed_dir) / "point_clouds.hdf5", "w")
         (Path(self.processed_dir) / "label_files").mkdir(exist_ok=True)
 
@@ -109,8 +108,6 @@ class TreeSSL(Dataset):
                 h5_file.create_dataset(f"{file_idx}/pos", data=data.pos.numpy())
                 if data.x is not None:
                     h5_file.create_dataset(f"{file_idx}/x", data=data.x.numpy())
-                #pt_file = Path(self.processed_dir) / "pt_files" / f"{file_idx}.pt"
-                #torch.save(data, pt_file)
                 file_idx += 1
 
             # save label file with name corresponding to pt file names
@@ -122,7 +119,6 @@ class TreeSSL(Dataset):
         log.info("### Processing done!")
     
     def get(self, idx):
-        #data = torch.load(Path(self.processed_dir) / "pt_files" / f"{idx}.pt")
         with h5py.File(Path(self.processed_dir) / "point_clouds.hdf5", "r") as file:
             data = Data()
             for key, val in file[f"{idx}"].items():
@@ -130,7 +126,6 @@ class TreeSSL(Dataset):
         return data
     
     def len(self):
-        #files = glob(str(Path(self.processed_dir) / "pt_files" / "*.pt"))
         with h5py.File(Path(self.processed_dir) / "point_clouds.hdf5", "r") as file:
             len_ = len(file.keys())
         return len_
