@@ -13,7 +13,8 @@ from torch_points3d.models import model_interface
 class SSLTracker(BaseTracker):
     def __init__(self, dataset, stage: str, wandb_log: bool, use_tensorboard: bool):
         super().__init__(stage, wandb_log, use_tensorboard)
-        self.val_cumulative_sizes = dataset.val_dataset.cumulative_sizes
+        if dataset.AGB_val:
+            self.val_cumulative_sizes = dataset.val_dataset.cumulative_sizes
         self.wandb_log = wandb_log
         
     def reset(self, stage="train"):
