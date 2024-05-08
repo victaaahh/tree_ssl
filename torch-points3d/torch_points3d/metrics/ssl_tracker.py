@@ -13,14 +13,17 @@ from torch_points3d.models import model_interface
 class SSLTracker(BaseTracker):
     def __init__(self, dataset, stage: str, wandb_log: bool, use_tensorboard: bool):
         super().__init__(stage, wandb_log, use_tensorboard)
-        self.val_cumulative_sizes = dataset.val_dataset.cumulative_sizes
+        if dataset.AGB_val:
+            self.val_cumulative_sizes = dataset.val_dataset.cumulative_sizes
+        self.wandb_log = wandb_log
         
     def reset(self, stage="train"):
         super().reset(stage)
         self.val_representation = []
         self.labels = []
         self.AGB_R2_score = None
-        self.representations = wandb.Artifact(f"validation_representations_{wandb.run.id}", type="representations")
+        if self.wandb_log:
+            self.representations = wandb.Artifact(f"validation_representations_{wandb.run.id}", type="representations")
         
     def get_metrics(self, verbose=False) -> Dict[str, Any]:
         metrics = self.get_loss()
@@ -45,9 +48,10 @@ class SSLTracker(BaseTracker):
             self.AGB_R2_score = score
             
             # dimensionality reduction logging of embeddings
-            n_dim = kwargs.get("representations_logging_dim", 50)
-            pca = PCA(n_dim)
-            self.representations.add(wandb.Table(columns=[f"D{i}" for i in range(n_dim)], data=pca.fit_transform(X_val)), "representations")
+            if self.wandb_log:
+                n_dim = kwargs.get("representations_logging_dim", 50)
+                pca = PCA(n_dim)
+                self.representations.add(wandb.Table(columns=[f"D{i}" for i in range(n_dim)], data=pca.fit_transform(X_val)), "representations")
     
     def track(self, model: model_interface.TrackerInterface, **kwargs):
         super().track(model, **kwargs)

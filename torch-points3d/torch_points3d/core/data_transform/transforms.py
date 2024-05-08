@@ -793,6 +793,7 @@ class AddRandomPoints:
         self.p = p
 
     def __call__(self, data):
+        assert data.x is None, f"{self.__class__.__name__} transform is not compatible with additional features. data.x needs to be None"
         n_ori_points = len(data.pos)
         if n_ori_points >= self.n_max_points:
             return data

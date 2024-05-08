@@ -227,7 +227,7 @@ class AddFeatByKey(object):
                 else:
                     raise Exception(
                         "The tensor x and {} can't be concatenated, x: {}, feat: {}".format(
-                            self._feat_name, x.pos.shape[0], feat.pos.shape[0]
+                            self._feat_name, x.shape[0], feat.shape[0]
                         )
                     )
         return data

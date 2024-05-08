@@ -176,7 +176,8 @@ class TreeSSLDataset(BaseDataset):
             feature_cols=self.feature_cols, min_pts=self.min_pts, min_high_vegetation=self.min_high_vegetation
         )
         
-        if dataset_opt.get("AGB_validation", False):
+        self.AGB_val = dataset_opt.get("AGB_validation", False)
+        if self.AGB_val:
             AGB_path = os.path.join(self.dataset_opt.dataroot, self.dataset_opt.AGB_val_options.dataset_name)
             AGB_processed_folder = dataset_opt.AGB_val_options.get("processed_folder", "processed")
             AGB_areas_file = AGB_path / Path(AGB_processed_folder) / "areas.pt"
@@ -185,7 +186,7 @@ class TreeSSLDataset(BaseDataset):
 
             AGB_areas = torch.load(AGB_areas_file)
 
-            AGB_train = Las(
+            AGB_train_data = Las(
                 root=AGB_path, areas=AGB_areas, split="train",
                 targets=self.dataset_opt.AGB_val_options.targets,
                 feature_cols=[], feature_scaling_dict=None, stats=[],
@@ -195,7 +196,7 @@ class TreeSSLDataset(BaseDataset):
                 min_pts_outer=self.min_pts, min_pts_inner=0,
             )
 
-            AGB_val = Las(
+            AGB_val_data = Las(
                 root=AGB_path, areas=AGB_areas, split="val",
                 targets=self.dataset_opt.AGB_val_options.targets,
                 feature_cols=[], feature_scaling_dict=None, stats=[],
@@ -210,7 +211,7 @@ class TreeSSLDataset(BaseDataset):
                     super().__init__(datasets)
                     self.has_labels = True
             
-            self.val_dataset = AGB_concat([AGB_train, AGB_val])
+            self.val_dataset = AGB_concat([AGB_train_data, AGB_val_data])
         
     def get_tracker(self, wandb_log: bool, tensorboard_log: bool):
         return SSLTracker(self, stage="train", wandb_log=wandb_log, use_tensorboard=tensorboard_log)

@@ -27,7 +27,7 @@ class MinkowskiVICReg(VICRegBase):
             layers.append(nn.BatchNorm1d(opt.expander_layers[i]))
             layers.append(nn.Linear(opt.expander_layers[i], opt.expander_layers[i+1]))
 
-        self.expander = nn.Sequential(nn.Linear(self.encoder.PLANES[-1], opt.expander_layers[0]), *layers)
+        self.expander = nn.Sequential(nn.Linear(self.encoder.PLANES[-1] * self.encoder.BLOCK.expansion, opt.expander_layers[0]), *layers)
 
     def set_input(self, data, device):
         # unpack data from dataset and apply preprocessing
@@ -54,10 +54,8 @@ class MinkowskiVICReg(VICRegBase):
 
     def forward(self, *args, **kwargs):
         if self.training:
-            input1, input2 = self.input
-
-            Y1 = self.encoder(input1).F
-            Y2 = self.encoder(input2).F
+            Y1 = self.encoder(self.input[0]).F
+            Y2 = self.encoder(self.input[1]).F
             
             self.output = (Y1, Y2)
             
