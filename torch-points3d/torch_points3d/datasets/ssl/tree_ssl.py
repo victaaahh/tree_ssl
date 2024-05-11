@@ -221,12 +221,24 @@ class TreeSSLDataset(BaseDataset):
             raise ValueError("Only even batch sizes supported, since we need every point cloud twice.")
         if self.train_dataset:
             self.train_sampler = DoubleBatchSampler(self.train_dataset, self.sampler_num_samples)
-            #if drop_last is False:
-            #    log.warning("Cannot disable 'drop_last' with DoubleBatchSampler.")
         if not shuffle:
             log.warning("shuffle=False is unsupported. Continuing with shuffle.")
+
         super().create_dataloaders(model, batch_size, shuffle, drop_last, num_workers, precompute_multi_scale)
         
+        # Overwriting val_loader to give it half batch size
+        conv_type = model.conv_type
+        self._val_loader = self._dataloader(
+                self.val_dataset,
+                self.val_pre_batch_collate_transform,
+                conv_type,
+                precompute_multi_scale,
+                batch_size=batch_size // 2,
+                shuffle=False,
+                num_workers=num_workers,
+                sampler=self.val_sampler,
+            )
+
 
 class DoubleBatchSampler(Sampler[int]):
     '''Samples each element randomly without replacement and yields each of them twice in
