@@ -9,6 +9,7 @@ from torch_geometric.data import Batch
 class MinkowskiVICReg(VICRegBase):
     def __init__(self, opt, model_type, dataset, modules):
         super().__init__(opt, model_type, dataset, modules)
+        self._supports_mixed = True
         self.encoder = initialize_minkowski_unet(model_name=opt.encoder,
                                                  in_channels=dataset.feature_dimension,
                                                  # For SENet out_channels is only used in the final layer which is overwritten below
