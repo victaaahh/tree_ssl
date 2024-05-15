@@ -24,6 +24,8 @@ raw_data_files: [2017/*.laz, 2020-21/*.laz]
 min_high_vegetation: 500
 #features: [classification]
 min_points: 500
+feature_dimension: 3 # Remember to change if including additional features
+num_classes: 0
   
 AGB_validation: True
 AGB_val_options:
