@@ -1,3 +1,4 @@
+import logging
 from typing import Dict, Any
 
 import torch
@@ -9,6 +10,9 @@ import wandb
 
 from torch_points3d.metrics.base_tracker import BaseTracker
 from torch_points3d.models import model_interface
+
+log = logging.getLogger(__name__)
+
 
 class SSLTracker(BaseTracker):
     def __init__(self, dataset, stage: str, wandb_log: bool, use_tensorboard: bool):
@@ -28,7 +32,7 @@ class SSLTracker(BaseTracker):
     def get_metrics(self, verbose=False) -> Dict[str, Any]:
         metrics = self.get_loss()
         if self.AGB_R2_score:
-            metrics["AGB_R2_score"] = self.AGB_R2_score
+            metrics["total_AGB_R2"] = self.AGB_R2_score
         return metrics
     
     def finalise(self, *args, **kwargs):
@@ -58,7 +62,19 @@ class SSLTracker(BaseTracker):
         if self._stage == "val":
             self.val_representation.append(model.get_output().cpu())
             self.labels.append(model.get_labels().cpu())
+
+    @property
+    def metric_func(self):
+        self._metric_func = {"loss": min, "total_AGB_R2": max}
+        return self._metric_func
             
     def publish_to_wandb(self, metrics, epoch):
         wandb.log_artifact(self.representations)
         super().publish_to_wandb(metrics, epoch)
+        
+    def print_summary(self):
+        metrics = self.get_metrics()
+        log.info("".join(["=" for i in range(50)]))
+        for key, value in metrics.items():
+            log.info("    {} = {}".format(key, value))
+        log.info("".join(["=" for i in range(50)]))
