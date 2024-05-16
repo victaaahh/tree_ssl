@@ -19,7 +19,7 @@ task: ssl
 class: tree_ssl.TreeSSLDataset
 dataset_name: treeSSL
 dataroot: data
-raw_data_files: [2017/*.laz, 2020-21/*.laz]
+raw_data_files: [split1/*.laz]
 
 min_high_vegetation: 500
 min_points: 500
@@ -58,4 +58,4 @@ pre_transform:
       z_max: 50
       skip_keys: ${data.skip_list}
       
-# training_num_samples: 469 # Determines the amount of samples that is considered an epoch
+training_num_samples: 500 # Determines the amount of samples that is considered an epoch
