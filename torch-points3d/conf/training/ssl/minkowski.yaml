@@ -22,7 +22,7 @@ checkpoint_dir: ""
 # parameters for Weights and Biases
 wandb:
   project: tree_ssl
-  log: False
+  log: True
   name: ${model_name}
   public: False # It will be display the model within wandb log, else not.
   config:

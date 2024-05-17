@@ -198,7 +198,6 @@ class Trainer:
             log.info("EPOCH %i / %i", epoch, self._cfg.training.epochs)
 
             if self._cfg.training.get("empty_cache_between_stages", False):
-                print("hello")
                 torch.cuda.empty_cache()
             self._train_epoch(epoch)
 
