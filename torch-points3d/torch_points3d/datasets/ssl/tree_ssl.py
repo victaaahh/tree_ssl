@@ -38,7 +38,7 @@ class TreeSSL(Dataset):
     
     @property
     def processed_file_names(self):
-        # Maybe implement better check
+        # A better check should be implemented
         return "done.flag"
     
     def process(self):
@@ -87,7 +87,8 @@ class TreeSSL(Dataset):
             # filtering them and saving them to disk
             first_pt_file = file_idx
             for idx in range(len(label_point_idx)):
-                # Checks for high_veg_count and min_points could be made into pre_filters instead
+                # Checks for high_veg_count and min_points should be made into pre_filters instead.
+                # Then a warning would appear if they were changed.
                 high_veg_count = np.sum(classification[label_point_idx[idx]] == 5)
                 if high_veg_count < self.min_high_vegetation:
                     labels.drop(idx, inplace=True)

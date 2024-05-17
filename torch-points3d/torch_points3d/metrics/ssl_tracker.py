@@ -38,7 +38,7 @@ class SSLTracker(BaseTracker):
     def finalise(self, *args, **kwargs):
         self._finalised = True
         if self._stage == "val":
-            # Compute AGB metrics and insert in metrics dict
+            # Compute AGB metrics
             X = torch.cat(self.val_representation, dim=0).numpy()
             y = torch.cat(self.labels, dim=0).numpy()
             X_train = X[:self.val_cumulative_sizes[0]]
@@ -51,7 +51,7 @@ class SSLTracker(BaseTracker):
             score = reg.score(X_val, y_val)
             self.AGB_R2_score = score
             
-            # dimensionality reduction logging of embeddings
+            # dimensionality reduction and logging of embeddings
             if self.wandb_log:
                 n_dim = kwargs.get("representations_logging_dim", 50)
                 pca = PCA(n_dim)

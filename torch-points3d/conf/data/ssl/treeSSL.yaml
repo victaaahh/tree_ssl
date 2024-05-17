@@ -37,7 +37,7 @@ AGB_val_options:
   } # metrics: m m cm
 
 transform_type: ???
-first_subsampling: 0.0125 # Used for voxelization by minkowskiengine
+first_subsampling: 0.0125 # Used for voxelization
 xy_radius: 15
 x_scale: 30
 y_scale: 30

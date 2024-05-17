@@ -32,6 +32,7 @@ wandb:
     transform_type: ${data.transform_type}
     optimizer: ${training.optim.optimizer.class}
     base_lr: ${training.optim.base_lr}
+    num_samples: ${data.training_num_samples}
 
     encoder: ${models.${model_name}.encoder}
     encoder_activation: ${models.${model_name}.encoder_options.activation}
