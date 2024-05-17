@@ -197,7 +197,9 @@ class Trainer:
         for epoch in range(self._checkpoint.start_epoch, self._cfg.training.epochs+1):
             log.info("EPOCH %i / %i", epoch, self._cfg.training.epochs)
 
-            torch.cuda.empty_cache()
+            if self._cfg.training.get("empty_cache_between_stages", False):
+                print("hello")
+                torch.cuda.empty_cache()
             self._train_epoch(epoch)
 
             if self.profiling:
@@ -207,11 +209,13 @@ class Trainer:
                 continue
 
             if self._dataset.has_val_loader:
-                torch.cuda.empty_cache()
+                if self._cfg.training.get("empty_cache_between_stages", False):
+                    torch.cuda.empty_cache()
                 self._test_epoch(epoch, "val")
 
             if self._dataset.has_test_loader:
-                torch.cuda.empty_cache()
+                if self._cfg.training.get("empty_cache_between_stages", False):
+                    torch.cuda.empty_cache()
                 self._test_epoch(epoch, "test")
 
         # Single test evaluation in resume case
