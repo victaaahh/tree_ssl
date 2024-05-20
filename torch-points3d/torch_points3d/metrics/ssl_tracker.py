@@ -2,6 +2,7 @@ import logging
 from typing import Dict, Any
 
 import torch
+import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.decomposition import PCA
@@ -55,7 +56,9 @@ class SSLTracker(BaseTracker):
             if self.wandb_log:
                 n_dim = kwargs.get("representations_logging_dim", 50)
                 pca = PCA(n_dim)
-                self.representations.add(wandb.Table(columns=[f"D{i}" for i in range(n_dim)], data=pca.fit_transform(X_val)), "representations")
+                pca_representations = pca.fit_transform(X_val)
+                data = np.concatenate((pca_representations, y_val.reshape(-1, 1)), axis=1)
+                self.representations.add(wandb.Table(columns=[f"D{i}" for i in range(n_dim)] + ["AGB"], data=data), "representations")
     
     def track(self, model: model_interface.TrackerInterface, **kwargs):
         super().track(model, **kwargs)
