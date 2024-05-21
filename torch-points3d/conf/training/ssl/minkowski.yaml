@@ -66,5 +66,5 @@ tensorboard:
     with_flops: True # use formula to estimate the FLOPS of specific operators (matrix multiplication and 2D convolution).
 
 
-enable_mixed: True
+enable_mixed: False
 empty_cache_between_stages: True
