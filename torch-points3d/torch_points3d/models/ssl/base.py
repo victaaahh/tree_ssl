@@ -15,7 +15,8 @@ class VICRegBase(BaseModel):
 
         # Not quite sure what this does:
         self.loss_names = ["vicreg_loss", "var_loss", "inv_loss", "cov_loss"]
-        
+
+    @torch.cuda.amp.custom_fwd(cast_inputs=torch.float32)
     def compute_vicreg_loss(self, Z1, Z2, scaling, eps=0.0001, gamma=1):
         # Batch size and vec size:
         N, D = Z1.shape
