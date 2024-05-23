@@ -26,9 +26,9 @@ optim:
 #      bn_decay: 0.9
 #      decay_step: 1000
 #      bn_clip: 1e-2
-# weight_name: "latest" # Used during resume, select with model to load from [miou, macc, acc..., latest]
+weight_name: "latest" # Used during resume, select with model to load from [miou, macc, acc..., latest]
 enable_cudnn: True
-# checkpoint_dir: "" Not sure if this will work. Needs to be tested.
+checkpoint_dir: "" # Not sure if this will work. Needs to be tested.
 
 # Those arguments within experiment defines which model, dataset, and task to be created for benchmarking
 # parameters for Weights and Biases
