@@ -46,6 +46,7 @@ wandb:
     transform_type: ${data.transform_type}
     mode: ${models.${model_name}.mode}
     ssl_model_path: ${models.${model_name}.ssl_model_path}
+    ssl_weight_name: ${models.${model_name}.ssl_weight_name}
 
 
 # parameters for TensorBoard Visualization
