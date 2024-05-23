@@ -13,12 +13,13 @@ class MinkowskiDownstream(MinkowskiBaselineModel):
                                                  D=option.D,
                                                  **option.kwargs)
         
+        in_channel = self.model.final.linear.weight.shape[1]
         self.model.final = nn.Identity()
 
-        state_dict = torch.load(option.model_path)['models'][option.encoder.weight_name]
+        state_dict = torch.load(option.ssl_model_path)["models"][option.ssl_weight_name]
+        state_dict = {key[8:]: val for key, val in state_dict.items() if key.startswith("encoder")}
         self.model.load_state_dict(state_dict)
         
-        in_channel = self.model.final.linear.weight.shape[1]
         self._supports_mixed = True
         self.model.final = SeparateLinear(in_channel, self.num_reg_classes)
 
@@ -43,4 +44,4 @@ class MinkowskiDownstream(MinkowskiBaselineModel):
         elif self.mode == "finetune":
             pass
         else:
-            raise ValueError('Only "freeze" and "finetune" mode is supported')
+            raise ValueError("Only 'freeze' and 'finetune' mode is supported")

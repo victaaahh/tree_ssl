@@ -1,6 +1,6 @@
 
 SENet50:
-  class: minkowski.MinkowskiVICReg
+  class: minkowski_downstream.MinkowskiDownstream
   conv_type: "SPARSE"
   model_name: "SENet50"
   D: 3
@@ -8,5 +8,6 @@ SENet50:
     activation: elu
     first_stride: 1
     global_pool: mean
-  ssl_model_path: "/var/home/victor/Documents/Bachelorprojekt/tree_ssl/torch-points3d/outputs/2024-05-07/18-42-06-379927/MinkowskiVICReg.pt"
+  ssl_model_path: "some/path/here/MinkowskiVICReg.pt"
+  ssl_weight_name: "latest"
   mode: "freeze"
