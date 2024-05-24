@@ -37,7 +37,7 @@ wandb:
     encoder: ${models.${model_name}.encoder}
     encoder_activation: ${models.${model_name}.encoder_options.activation}
     encoder_first_stride: ${models.${model_name}.encoder_options.first_stride}
-    encoder_global_mean: ${models.${model_name}.encoder_options.global_pool}
+    encoder_global_pool: ${models.${model_name}.encoder_options.global_pool}
 
     expander_layers: ${models.${model_name}.expander_layers}
     expander_activation: ${models.${model_name}.expander_activation}
