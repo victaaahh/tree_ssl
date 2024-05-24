@@ -37,10 +37,10 @@ class MinkowskiDownstream(MinkowskiBaselineModel):
         self.mode = option.mode
         if self.mode == "freeze":
             self.model.requires_grad_(False)
-            # self.model.eval()
+            self.model.eval()
             self.model.final.requires_grad_(True)
-            # self.model.final.train()
-            # self.enable_dropout_in_eval()
+            self.model.final.train()
+            self.enable_dropout_in_eval()
         elif self.mode == "finetune":
             pass
         else:
