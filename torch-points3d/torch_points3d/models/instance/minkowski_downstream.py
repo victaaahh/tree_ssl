@@ -22,7 +22,7 @@ class MinkowskiDownstream(MinkowskiBaselineModel):
         state_dict = {key[8:]: val for key, val in state_dict.items() if key.startswith("encoder")}
         self.model.load_state_dict(state_dict)
         
-        if option.get("kwargs.dropout", 0) > 0:
+        if option.kwargs.get("dropout", 0) > 0:
             self.model.glob_avg = nn.Sequential(
                 ME.MinkowskiGlobalSumPooling(),
                 ME.MinkowskiDropout(option.kwargs.dropout)
