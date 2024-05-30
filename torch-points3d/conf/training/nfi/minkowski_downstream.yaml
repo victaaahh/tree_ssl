@@ -1,52 +1,52 @@
 # @package training
 # Those arguments defines the training hyper-parameters
-epochs: 101
-num_workers: 3
-batch_size: 32 # Must be an even number
+epochs: 310
+num_workers: 4
+batch_size: 32
 cuda: 0
 shuffle: True
 optim:
-  base_lr: 0.001
+  base_lr: 0.005
   grad_clip: 100
   optimizer:
+#    class: SGD
+#    params:
+#      momentum: 0.98
+#      lr: ${training.optim.base_lr} # The path is cut from training
+#      weight_decay: 1e-3
     class: AdaBelief
     params:
       lr: ${training.optim.base_lr} # The path is cut from training
-      weight_decay: 1e-4
+      weight_decay: 1e-2
   lr_scheduler: ${lr_scheduler}
+#  bn_scheduler:
+#    bn_policy: "step_decay"
+#    params:
+#      bn_momentum: 0.98
+#      bn_decay: 0.9
+#      decay_step: 1000
+#      bn_clip: 1e-2
 weight_name: "latest" # Used during resume, select with model to load from [miou, macc, acc..., latest]
 enable_cudnn: True
-checkpoint_dir: ""
+checkpoint_dir: "" # Not sure if this will work. Needs to be tested.
 
 # Those arguments within experiment defines which model, dataset, and task to be created for benchmarking
 # parameters for Weights and Biases
 wandb:
   project: tree_ssl
   log: True
-  name: ${model_name}
+  name: downstream_${model_name}
   public: False # It will be display the model within wandb log, else not.
   config:
-    model: ${model_name}
+    model_name: ${model_name}
+    features: ${data.features}
     batch_size: ${training.batch_size}
     first_subsampling: ${data.first_subsampling}
-    transform_type: ${data.transform_type}
-    optimizer: ${training.optim.optimizer.class}
     base_lr: ${training.optim.base_lr}
-    num_samples: ${data.training_num_samples}
-
-    encoder: ${models.${model_name}.encoder}
-    encoder_activation: ${models.${model_name}.encoder_options.activation}
-    encoder_first_stride: ${models.${model_name}.encoder_options.first_stride}
-    encoder_global_pool: ${models.${model_name}.encoder_options.global_pool}
-
-    expander_layers: ${models.${model_name}.expander_layers}
-    expander_activation: ${models.${model_name}.expander_activation}
-      
-    loss_var_scaling: ${models.${model_name}.loss_scaling.variance}
-    loss_inv_scaling: ${models.${model_name}.loss_scaling.invariance}
-    loss_cov_scaling: ${models.${model_name}.loss_scaling.covariance}
-    loss_eps: ${models.${model_name}.loss_eps}
-    loss_gamma: ${models.${model_name}.loss_gamma}
+    transform_type: ${data.transform_type}
+    mode: ${models.${model_name}.mode}
+    ssl_model_path: ${models.${model_name}.ssl_model_path}
+    ssl_weight_name: ${models.${model_name}.ssl_weight_name}
 
 
 # parameters for TensorBoard Visualization
@@ -66,5 +66,4 @@ tensorboard:
     with_flops: True # use formula to estimate the FLOPS of specific operators (matrix multiplication and 2D convolution).
 
 
-enable_mixed: False
-empty_cache_between_stages: True
+enable_mixed: True

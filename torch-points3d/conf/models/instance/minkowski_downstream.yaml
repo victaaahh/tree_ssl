@@ -1,0 +1,13 @@
+
+SENet50:
+  class: minkowski_downstream.MinkowskiDownstream
+  conv_type: "SPARSE"
+  model_name: "SENet50"
+  D: 3
+  kwargs:
+    activation: elu
+    first_stride: 1
+    global_pool: mean
+  ssl_model_path: "some/path/here/MinkowskiVICReg.pt"
+  ssl_weight_name: "latest"
+  mode: "freeze"
