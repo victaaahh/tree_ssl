@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+import MinkowskiEngine as ME
+
 from torch_points3d.modules.MinkowskiEngine import initialize_minkowski_unet
 from torch_points3d.models.instance.minkowski import MinkowskiBaselineModel, SeparateLinear
 
@@ -19,6 +21,8 @@ class MinkowskiDownstream(MinkowskiBaselineModel):
         state_dict = torch.load(option.ssl_model_path)["models"][option.ssl_weight_name]
         state_dict = {key[8:]: val for key, val in state_dict.items() if key.startswith("encoder")}
         self.model.load_state_dict(state_dict)
+        
+        self.model.glob_avg = ME.MinkowskiGlobalSumPooling()
         
         self._supports_mixed = True
         self.model.final = SeparateLinear(in_channel, self.num_reg_classes)
