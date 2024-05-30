@@ -22,7 +22,13 @@ class MinkowskiDownstream(MinkowskiBaselineModel):
         state_dict = {key[8:]: val for key, val in state_dict.items() if key.startswith("encoder")}
         self.model.load_state_dict(state_dict)
         
-        self.model.glob_avg = ME.MinkowskiGlobalSumPooling()
+        if option.get("kwargs.dropout", 0) > 0:
+            self.model.glob_avg = nn.Sequential(
+                ME.MinkowskiGlobalSumPooling(),
+                ME.MinkowskiDropout(option.kwargs.dropout)
+            )
+        else:
+            self.model.glob_avg = ME.MinkowskiGlobalSumPooling()
         
         self._supports_mixed = True
         self.model.final = SeparateLinear(in_channel, self.num_reg_classes)
