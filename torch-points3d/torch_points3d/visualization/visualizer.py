@@ -231,19 +231,10 @@ class Visualizer:
                 dataset = loader.dataset
                 pred = {}
                 data_vis = model.data_visual
-                if getattr(model, "has_reg_targets", False):
+                if model.has_reg_targets:
                     preds = model.get_reg_output().detach().cpu().numpy()
                     for i, pred_name in enumerate(dataset.reg_targets):
                         pred[pred_name] = preds[:, i]
-                if getattr(model, "has_mol_targets", False):
-                    preds = model.get_mol_output().detach().cpu().numpy()
-                    for i, pred_name in enumerate(dataset.mol_targets):
-                        pred[pred_name] = preds[:, i]
-                if getattr(model, "has_cls_targets", False):
-                    preds = model.get_cls_output()
-                    for i, pred_name in enumerate(dataset.cls_targets):
-                        pred[pred_name] = preds[i].argmax(1).detach().cpu().numpy()
-                        pred[f"{pred_name}_prob"] = preds[i].softmax(1).detach().cpu().numpy().max(1)
                 pred["area"] = data_vis.area_name
 
                 label_idx_ = [idx[0] for idx in data_vis.label_idx]
